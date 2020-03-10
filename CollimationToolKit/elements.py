@@ -1,6 +1,8 @@
 from pysixtrack.elements import Element
 from operator import sub, mul
 import numpy as np
+import types
+
 
 
 #-------------------------------------------------------------------------------
@@ -117,3 +119,79 @@ class LimitPolygon(Element):
             if len(particle.state) == 0:
                 return "All particles lost"
 
+
+
+#-------------------------------------------------------------------------------
+#------- Foil class ---------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+#------- example scatter functions ---------------------------------------
+def default_scatter(self, particle, idx=[]):
+        # default behaviour: black hole
+        if not hasattr(particle.state, "__iter__"):
+            particle.state = 0
+            return "Particle lost"
+        else:
+            particle.state[idx] = 0
+            particle.remove_lost_particles()
+            if len(particle.state) == 0:
+                return "All particles lost"
+
+
+def test_strip_ions(self, particle, idx=[]):
+    if not hasattr(particle, "Z"):
+        raise AttributeError("""Partices have no atomic number Z
+                                provide Z via e.g.
+                                >>> particle.Z = 92
+                            """)
+    if not hasattr(particle.state, "__iter__"):
+        particle.qratio = (particle.Z-1) / particle.q0
+    else:
+        particle[idx].qratio = np.divide(particle.Z[idx]-1, particle.q0[idx])
+        
+        
+#------- pysixtrack.elements based subclass ------------------------------
+class __LimitFoilCls__(Element):
+    _description = [
+        ("min_x", "m", "Minimum horizontal aperture", -1.0),
+        ("max_x", "m", "Maximum horizontal aperture", 1.0),
+        ("min_y", "m", "Minimum vertical aperture", -1.0),
+        ("max_y", "m", "Minimum vertical aperture", 1.0),
+        ("thickness", "m", "Foil thickness", 0.001),
+        ("density", "g/cm^3", "Foil meterial density", 1.86),
+        ("Z", "1", "proton number of foil material", 6),
+        ("A", "1", "Standard atomic weight of foil material", 12.0096), #...or use the relatice atomic mass instead...
+    ]
+    
+    def track(self, particle):
+
+        x = particle.x
+        y = particle.y
+
+        if not hasattr(particle.state, "__iter__"):
+            if (x < self.min_x or x > self.max_x
+                    or y < self.min_y or y > self.max_y):
+                self.scatter(particle)
+        else:
+            hitting_particles_idx = np.where(
+                    (x <= self.min_x)
+                    | (x >= self.max_x)
+                    | (y <= self.min_y)
+                    | (y >= self.max_y)
+                )[0]
+            self.scatter(particle, idx = hitting_particles_idx)
+
+#----------- Front facing function to circumvent the ---------------------
+#------- restrictions of functions as default parameters -----------------
+def LimitFoil(**kwargs):
+    func_scatter = kwargs.pop('func_scatter', None)
+    foilclass_instance = __LimitFoilCls__(**kwargs)
+    if func_scatter:
+        if not type(func_scatter) == type(lambda: None):
+            raise ValueError("func_scatter must be function")
+        foilclass_instance.scatter = types.MethodType(  func_scatter, 
+                                                        foilclass_instance)
+    else:
+        foilclass_instance.scatter = types.MethodType(  default_scatter, 
+                                                        foilclass_instance)
+    return foilclass_instance
