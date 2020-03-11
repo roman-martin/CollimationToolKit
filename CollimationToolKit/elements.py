@@ -1,5 +1,6 @@
 from pysixtrack.elements import Element
 from operator import sub, mul
+from CollimationToolKit.ScatterFunctions import default_scatter, test_strip_ions
 import numpy as np
 import types
 
@@ -125,31 +126,6 @@ class LimitPolygon(Element):
 #------- Foil class ---------------------------------------------------------
 #-------------------------------------------------------------------------------
 
-#------- example scatter functions ---------------------------------------
-def default_scatter(self, particle, idx=[]):
-        # default behaviour: black hole
-        if not hasattr(particle.state, "__iter__"):
-            particle.state = 0
-            return "Particle lost"
-        else:
-            particle.state[idx] = 0
-            particle.remove_lost_particles()
-            if len(particle.state) == 0:
-                return "All particles lost"
-
-
-def test_strip_ions(self, particle, idx=[]):
-    if not hasattr(particle, "Z"):
-        raise AttributeError("""Partices have no atomic number Z
-                                provide Z via e.g.
-                                >>> particle.Z = 92
-                            """)
-    if not hasattr(particle.state, "__iter__"):
-        particle.qratio = (particle.Z-1) / particle.q0
-    else:
-        particle[idx].qratio = np.divide(particle.Z[idx]-1, particle.q0[idx])
-        
-        
 #------- pysixtrack.elements based subclass ------------------------------
 class __LimitFoilCls__(Element):
     _description = [
