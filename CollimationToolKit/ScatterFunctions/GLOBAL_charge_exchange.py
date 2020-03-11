@@ -1,4 +1,17 @@
-# requires Linux and GLOBAL code in PATH
+'''
+This module provides functions to run the GLOBAL charge exchange code as
+a scatter function of the LimitFoil class.
+
+The module DOES NOT do the calculations itself but merely provides an interface
+to call the executable.
+
+In its current state GLOBAL_charge_exchange.py only correctly runs on Linux
+systems and requires the GLOBAL executable in #PATH.
+
+The GLOBAL executable can be obtained from
+https://web-docs.gsi.de/~weick/charge_states/
+'''
+
 import os
 import shutil
 import subprocess
