@@ -29,42 +29,43 @@ N_part = 20000
 #-------------------------------------------------------
 #----Test scalar----------------------------------------
 #-------------------------------------------------------
-p_scalar = pysixtrack.Particles()
-passed_particles_x_poly = []
-passed_particles_y_poly = []
-passed_particles_x_rect = []
-passed_particles_y_rect = []
-lost_particles_x_poly = []
-lost_particles_y_poly = []
-lost_particles_x_rect = []
-lost_particles_y_rect = []
-for n in range(N_part):
-    p_scalar.x = (np.random.rand()-0.5) * 2.*8.5e-2
-    p_scalar.y = (np.random.rand()-0.5) * 2.*8.5e-2
-    p_scalar.state = 1
+def test_scalar():
+    p_scalar = pysixtrack.Particles()
+    passed_particles_x_poly = []
+    passed_particles_y_poly = []
+    passed_particles_x_rect = []
+    passed_particles_y_rect = []
+    lost_particles_x_poly = []
+    lost_particles_y_poly = []
+    lost_particles_x_rect = []
+    lost_particles_y_rect = []
+    for n in range(N_part):
+        p_scalar.x = (np.random.rand()-0.5) * 2.*8.5e-2
+        p_scalar.y = (np.random.rand()-0.5) * 2.*8.5e-2
+        p_scalar.state = 1
 
-    poly_aper.track(p_scalar)
-    if p_scalar.state == 1:
-        passed_particles_x_poly += [p_scalar.x]
-        passed_particles_y_poly += [p_scalar.y]
-    else:
-        lost_particles_x_poly += [p_scalar.x]
-        lost_particles_y_poly += [p_scalar.y]
-    # check against LimitRect
-    p_scalar.state = 1
-    rect_aper.track(p_scalar)
-    if p_scalar.state == 1:
-        passed_particles_x_rect += [p_scalar.x]
-        passed_particles_y_rect += [p_scalar.y]
-    else:
-        lost_particles_x_rect += [p_scalar.x]
-        lost_particles_y_rect += [p_scalar.y]
+        poly_aper.track(p_scalar)
+        if p_scalar.state == 1:
+            passed_particles_x_poly += [p_scalar.x]
+            passed_particles_y_poly += [p_scalar.y]
+        else:
+            lost_particles_x_poly += [p_scalar.x]
+            lost_particles_y_poly += [p_scalar.y]
+        # check against LimitRect
+        p_scalar.state = 1
+        rect_aper.track(p_scalar)
+        if p_scalar.state == 1:
+            passed_particles_x_rect += [p_scalar.x]
+            passed_particles_y_rect += [p_scalar.y]
+        else:
+            lost_particles_x_rect += [p_scalar.x]
+            lost_particles_y_rect += [p_scalar.y]
 
 
-assert passed_particles_x_poly == passed_particles_x_rect
-assert passed_particles_y_poly == passed_particles_y_rect
-assert lost_particles_x_poly == lost_particles_x_rect
-assert lost_particles_y_poly == lost_particles_y_rect
+    assert passed_particles_x_poly == passed_particles_x_rect
+    assert passed_particles_y_poly == passed_particles_y_rect
+    assert lost_particles_x_poly == lost_particles_x_rect
+    assert lost_particles_y_poly == lost_particles_y_rect
 
 
 
@@ -76,46 +77,48 @@ def compare_arrays(a,b):
         if (a == b).all():
             return True
     return False
-    
-p_vec_poly = pysixtrack.Particles()
-p_vec_poly.x = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
-p_vec_poly.y = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
-p_vec_poly.state = np.ones_like(p_vec_poly.x, dtype=np.int)
 
-p_vec_rect = p_vec_poly.copy()
+def test_vector():
+    p_vec_poly = pysixtrack.Particles()
+    p_vec_poly.x = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
+    p_vec_poly.y = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
+    p_vec_poly.state = np.ones_like(p_vec_poly.x, dtype=np.int)
 
-
-poly_aper.track(p_vec_poly)
-rect_aper.track(p_vec_rect)
+    p_vec_rect = p_vec_poly.copy()
 
 
-assert compare_arrays(p_vec_poly.state,p_vec_rect.state)
-assert compare_arrays(p_vec_poly.x,p_vec_rect.x)
-assert compare_arrays(p_vec_poly.y,p_vec_rect.y)
+    poly_aper.track(p_vec_poly)
+    rect_aper.track(p_vec_rect)
+
+
+    assert compare_arrays(p_vec_poly.state,p_vec_rect.state)
+    assert compare_arrays(p_vec_poly.x,p_vec_rect.x)
+    assert compare_arrays(p_vec_poly.y,p_vec_rect.y)
 
 
 #-------------------------------------------------------
 #----Test mpmath compatibility--------------------------
 #-------------------------------------------------------
-p_mp = pysixtrack.Particles()
-mp.dps = 25
-p_mp.x = mp.mpf(0.03) - mp.mpf(1e-27)
-p_mp.y = mp.mpf(0.01)
-p_mp.state = 1
-polygon_mp = [[mp.mpf(-0.03),mp.mpf(0.03),mp.mpf(0.03),mp.mpf(-0.03)],
-              [mp.mpf(0.04),mp.mpf(0.04),mp.mpf(-0.04),mp.mpf(-0.04)]]
-aper_elem_mp = ctk.elements.LimitPolygon(aperture = polygon_mp)
+def test_mpmath_compatibility():
+    p_mp = pysixtrack.Particles()
+    mp.dps = 25
+    p_mp.x = mp.mpf(0.03) - mp.mpf(1e-27)
+    p_mp.y = mp.mpf(0.01)
+    p_mp.state = 1
+    polygon_mp = [[mp.mpf(-0.03),mp.mpf(0.03),mp.mpf(0.03),mp.mpf(-0.03)],
+                  [mp.mpf(0.04),mp.mpf(0.04),mp.mpf(-0.04),mp.mpf(-0.04)]]
+    aper_elem_mp = ctk.elements.LimitPolygon(aperture = polygon_mp)
 
-aper_elem_mp.track(p_mp)
+    aper_elem_mp.track(p_mp)
 
-assert p_mp.state == 1
+    assert p_mp.state == 1
 
-p_mp.x = mp.mpf(0.03) + mp.mpf(1e-27)
-p_mp.y = mp.mpf(0.01)
-p_mp.state = 1
-aper_elem_mp.track(p_mp)
+    p_mp.x = mp.mpf(0.03) + mp.mpf(1e-27)
+    p_mp.y = mp.mpf(0.01)
+    p_mp.state = 1
+    aper_elem_mp.track(p_mp)
 
-assert p_mp.state == 0
+    assert p_mp.state == 0
 
 
 
