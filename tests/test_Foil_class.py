@@ -1,4 +1,6 @@
 import numpy as np
+import shutil
+import pytest
 import pysixtrack
 import CollimationToolKit as ctk
 
@@ -77,6 +79,9 @@ uranium_mass = 238.0507884 * 931.49410242e6
 
 
 def test_GLOBAL():
+    if not shutil.which('global'):
+        pytest.skip("GLOBAL executable not found in PATH")
+        
     p_GLOBAL = pysixtrack.Particles(q0=28, mass0 = uranium_mass,
                                     x = -0.12, y = 0.02, 
                                     p0c = np.sqrt(Ekin**2 + 2*Ekin*uranium_mass))
@@ -98,6 +103,9 @@ def test_GLOBAL():
 #--- Foil with GLOBAL as scatter function for mutliple particles-------------
 #-------------------------------------------------------------------------------
 def test_GLOBAL_vec():
+    if not shutil.which('global'):
+        pytest.skip("GLOBAL executable not found in PATH")
+        
     N_part = 200
     p_vec = pysixtrack.Particles(q0=28, mass0 = uranium_mass,
                                     p0c = np.sqrt(Ekin**2 + 2*Ekin*uranium_mass))

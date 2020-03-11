@@ -6,7 +6,7 @@ The module DOES NOT do the calculations itself but merely provides an interface
 to call the executable.
 
 In its current state GLOBAL_charge_exchange.py only correctly runs on Linux
-systems and requires the GLOBAL executable in #PATH.
+systems and requires the GLOBAL executable in PATH.
 
 The GLOBAL executable can be obtained from
 https://web-docs.gsi.de/~weick/charge_states/
