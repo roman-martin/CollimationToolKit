@@ -1,4 +1,7 @@
+import pytest
 import numpy as np
+import os
+import shutil
 import pysixtrack
 import CollimationToolKit as ctk
 from mpmath import mp
@@ -9,11 +12,12 @@ aper_min_x = -0.04
 aper_max_x = 0.03
 aper_min_y = -0.02
 aper_max_y = 0.01
-mypolygon = np.array([  [aper_max_x, aper_max_y],
-                        [aper_max_x, aper_min_y],
-                        [aper_min_x, aper_min_y],
-                        [aper_min_x, aper_max_y]]
-                    ).transpose()
+aper_array = [  [aper_max_x, aper_max_y],
+                [aper_max_x, aper_min_y],
+                [aper_min_x, aper_min_y],
+                [aper_min_x, aper_max_y]]
+                        
+mypolygon = np.array(aper_array).transpose()
 
 poly_aper = ctk.elements.LimitPolygon(aperture = mypolygon)
 rect_aper = pysixtrack.elements.LimitRect(
@@ -121,4 +125,60 @@ def test_mpmath_compatibility():
     assert p_mp.state == 0
 
 
+#-------------------------------------------------------
+#----Test MAD-X loader----------------------------------
+#-------------------------------------------------------
+def test_Polygon_mad_loader():
+    madx = pytest.importorskip("cpymad.madx")
+    
+    madx = madx.Madx()
+    madx.options.echo = False
+    madx.options.warn = False
+    madx.options.info = False
+    
+    tmpdir = './tmp/'
+    if not os.path.isdir(tmpdir):
+        os.mkdir(tmpdir)
+    with open(tmpdir + 'test_poly.aper','w') as aper_file:
+        for row in aper_array:
+            aper_file.write(str(row[0]) + '   ' + str(row[1]) + '\n')
+    
+    madx.input('''
+        TXQ: Collimator, l=0.0, apertype='{}test_poly.aper';
+        
+        testseq: SEQUENCE, l=2.0;
+            TXQ, at = 1.0;
+        ENDSEQUENCE;
+        
+        BEAM, Particle=proton, Energy=50000.0, EXN=2.2e-6, EYN=2.2e-6;
+        USE, Sequence=testseq;
+    '''.format(tmpdir))
+            
+    seq = madx.sequence.testseq
+    testline = pysixtrack.Line.from_madx_sequence(seq,install_apertures=True)
+    poly_aper_mad = testline.elements[3]
+    madx.input('stop;')
+    
+    p_poly_mad = pysixtrack.Particles()
+    p_poly_mad.x = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
+    p_poly_mad.y = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
+    p_poly_mad.state = np.ones_like(p_poly_mad.x, dtype=np.int)
+    
+    p_rect = p_poly_mad.copy()
+
+    poly_aper_mad.track(p_poly_mad)
+    rect_aper.track(p_rect)
+
+
+    assert compare_arrays(p_poly_mad.state,p_rect.state)
+    assert compare_arrays(p_poly_mad.x,p_rect.x)
+    assert compare_arrays(p_poly_mad.y,p_rect.y)
+    
+    #if os.path.isfile(tmpdir + 'test_poly.aper'):
+    #    shutil.rmtree(tmpdir)
+    
+    
+    
+    
+    
 
