@@ -174,8 +174,8 @@ def test_Polygon_mad_loader():
     assert compare_arrays(p_poly_mad.x,p_rect.x)
     assert compare_arrays(p_poly_mad.y,p_rect.y)
     
-    #if os.path.isfile(tmpdir + 'test_poly.aper'):
-    #    shutil.rmtree(tmpdir)
+    if os.path.isfile(tmpdir + 'test_poly.aper'):
+        shutil.rmtree(tmpdir)
     
     
     
