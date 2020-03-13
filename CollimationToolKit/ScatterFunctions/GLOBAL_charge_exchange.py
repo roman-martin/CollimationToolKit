@@ -28,26 +28,9 @@ formatable_input_file_str = ''' GLOBAL Input file:
  Target:        A          Z    Dt(mg/cm^2) 
               {}        {}      {}
  Options:     I_CHAR    I_LOOP   I_OUTP     I_WR
-                0          0        1         2
+                0          0        1         3
  Q-states: 
     0  1  2  3  4  5  6  7  8  9
-
-
- Comments:
- Options: I_CHAR: =0  ====> charge state at target exit
-                  =1  ====> equilibrium charge state
-                  =2  ====> charge-state evolution
-          I_LOOP: =0  ====> no loop
-                  =1  ====> loop over Z(projectile)
-                  =2  ====>           incident energy
-                  =3  ====>           incident Q state
-                  =4  ====>           Z(target)
-                  =5  ====>           D(target)
-          I_OUTP: =0  ====> output on screen
-                  =1  ====>        on file
-                  =2  ====>        on screen/file
-          I_WR:   =0,1,2,3 multiplies output steps by 10,100,1000,10000
-                  reasonable values: I_WR=1,2,3
 '''
 
 
@@ -88,7 +71,7 @@ def GLOBAL(self, particle, idx=[]):
                 continue    # in case we ever track mixed particle sets including non-ions
             p_Q = particle.q0 * particle.qratio[ii]      
             p_energy = (particle.energy[ii] - particle.mass0) / p_A
-                        # we will ignore delta_p here, assuming the spread is small
+            
             chargestate_probability, E_out = __run_GLOBAL__(target_A, target_Z,
                                                             target_Dt, p_A, p_Z,
                                                             p_Q, p_energy)
@@ -102,21 +85,11 @@ def GLOBAL(self, particle, idx=[]):
                                                     
 
 def __run_GLOBAL__(target_A, target_Z, target_Dt, p_A, p_Z, p_Q, p_energy):
-    #---------------------------------------------------------------------------
-    #----- Create input file for GLOBAL code---------------------------------
-    #---------------------------------------------------------------------------
-    tmpdirpath = os.path.abspath('./') + '/tmp/'
-    if not os.path.isdir(tmpdirpath):
-        os.mkdir(tmpdirpath)
-    with open(tmpdirpath + 'tmp.ginput', 'w') as global_input_file:
-        if p_Z - p_Q > 28:
-            chargestate = 28
-        else:
-            chargestate = p_Z - p_Q
-            
-        input_str = formatable_input_file_str.format(p_A, p_Z, chargestate, p_energy/1e6, target_A, target_Z, target_Dt)
-        global_input_file.write(input_str)
-
+    if p_Z - p_Q > 28:
+        chargestate = 28
+    else:
+        chargestate = p_Z - p_Q
+    
     #---------------------------------------------------------------------------
     #----- Run the GLOBAL charge exchange code ------------------------------
     #---------------------------------------------------------------------------
@@ -126,8 +99,13 @@ def __run_GLOBAL__(target_A, target_Z, target_Dt, p_A, p_Z, p_Q, p_energy):
     globalcodedir_path = shutil.which('global')[:-len('global')] #this only works on Linux, but do we need to support inferior systems?
     if not globalcodedir_path:
         raise RuntimeError("Executable of GLOBAL charge exchange code not found")
-    shutil.copyfile(tmpdirpath + 'tmp.ginput', globalcodedir_path + 'tmp.ginput') # todo: link instead?
-
+    
+    #----- Create input file for GLOBAL code---------------------------------
+    input_str = formatable_input_file_str.format(p_A, p_Z, chargestate, p_energy/1e6, target_A, target_Z, target_Dt)
+    with open(globalcodedir_path + 'tmp.ginput', 'w') as global_input_file:
+        global_input_file.write(input_str)
+    
+    #----- run GLOBAL code---------------------------------------------------
     with subprocess.Popen('global', cwd = globalcodedir_path,
                                     stdin = subprocess.PIPE,
                                     stdout = subprocess.DEVNULL) as p:
@@ -138,18 +116,10 @@ def __run_GLOBAL__(target_A, target_Z, target_Dt, p_A, p_Z, p_Q, p_energy):
         p.communicate(input=('n'.encode() + os.linesep.encode())) # do not repeat
 
 
-    #----- Clean up after us -------------------------------
-    try:
-        shutil.move(globalcodedir_path + 'tmp.globout', tmpdirpath + 'tmp.globout')
-    except FileNotFoundError:
-        raise RuntimeError("Output of GLOBAL charge exchange code not found")
-    if os.path.isfile(globalcodedir_path + 'tmp.ginput'):
-        os.remove(globalcodedir_path + 'tmp.ginput')
-
     #---------------------------------------------------------------------------
     #----- Check if output file is correct-----------------------------------
     #---------------------------------------------------------------------------
-    with open(tmpdirpath + 'tmp.globout', 'r') as outputfile:
+    with open(globalcodedir_path + 'tmp.globout', 'r') as outputfile:
         nextline_are_results = False
         for line in outputfile:
             if '(Z=' in line and 'A=' in line and 'Qe=' in line:
@@ -187,6 +157,12 @@ def __run_GLOBAL__(target_A, target_Z, target_Dt, p_A, p_Z, p_Q, p_energy):
         if not abs(in_var - float(target_str[idx_s:idx_e])) < comparison_precision: #GLOBAL does some rounding
             print(start_str, float(target_str[idx_s:idx_e]), ', should be', in_var)
             raise RuntimeError("GLOBAL charge exchange code did not use correct target input")
+
+    #----- Clean up after us -------------------------------
+    if os.path.isfile(globalcodedir_path + 'tmp.ginput'):
+        os.remove(globalcodedir_path + 'tmp.ginput')
+    if os.path.isfile(globalcodedir_path + 'tmp.globout'):
+        os.remove(globalcodedir_path + 'tmp.globout')
 
     #---------------------------------------------------------------------------
     #----- Parse GLOBAL output string----------------------------------------
