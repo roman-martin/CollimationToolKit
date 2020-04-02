@@ -49,7 +49,7 @@ def test_foil_testfunction():
 
     stripperfoil_test = ctk.elements.LimitFoil(
             min_x=foil_min_x,
-            func_scatter=ctk.elements.test_strip_ions)
+            scatter=ctk.elements.test_strip_ions)
 
     p_testscatter = pysixtrack.Particles(q0=28, mass0 = 238.02891*931.49410242e6)
     p_testscatter.x = -0.12
@@ -71,7 +71,7 @@ def test_foil_testfunction():
 
 stripperfoil_GLOBAL = ctk.elements.LimitFoil(
         min_x=foil_min_x,
-        func_scatter=ctk.ScatterFunctions.GLOBAL)
+        scatter=ctk.ScatterFunctions.GLOBAL)
 
 Ekin = 200.0e6*238
 uranium_mass = 238.0507884 * 931.49410242e6

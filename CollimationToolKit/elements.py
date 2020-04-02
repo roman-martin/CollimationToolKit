@@ -90,7 +90,7 @@ class LimitPolygon(Element):
         aper_1 = func_expand_dims(self.aperture, axis=2)
         aper_2 = func_roll(aper_1, 1, axis=1)
         # prepare reference point outside aperture
-        refpoint = func_array([[1.1*abs(max(aper_1[0]))], [1.1*abs(max(aper_1[1]))]] ) # this line won't work without numpy
+        refpoint = func_array([[1.1*abs(max(aper_1[0]))], [1.1*abs(max(aper_1[1]))]] )
         
         coords = func_array([[particle.x], [particle.y]])
         
@@ -126,8 +126,7 @@ class LimitPolygon(Element):
 #------- Foil class ---------------------------------------------------------
 #-------------------------------------------------------------------------------
 
-#------- pysixtrack.elements based subclass ------------------------------
-class __LimitFoilCls__(Element):
+class LimitFoil(Element):
     _description = [
         ("min_x", "m", "Minimum horizontal aperture", -1.0),
         ("max_x", "m", "Maximum horizontal aperture", 1.0),
@@ -136,8 +135,24 @@ class __LimitFoilCls__(Element):
         ("thickness", "m", "Foil thickness", 0.001),
         ("density", "g/cm^3", "Foil meterial density", 1.86),
         ("Z", "1", "proton number of foil material", 6),
-        ("A", "1", "Standard atomic weight of foil material", 12.0096), #...or use the relatice atomic mass instead...
+        ("A", "1", "Standard atomic weight of foil material", 12.0096), #...or use the relative atomic mass instead...
+        ("scatter", "<function>", "scatter function", "this should be replaced on creation"),
     ]
+
+    def __post_init__(self):
+        # the whole problem leading to this __post_init__ is that
+        # 1. defaults of type function are weeded out in
+        #    pysixtrack.base_classes._default_pro
+        # 2. the scatter functions must be bound methods
+        if self.scatter == "this should be replaced on creation":
+            # if "default" string
+            self.scatter = types.MethodType(default_scatter, self)
+        else:
+            # if scatter keyword argument is given
+            if not type(self.scatter) == type(lambda: None):
+                raise ValueError("scatter must be function")
+            self.scatter = types.MethodType(self.scatter, self)
+
     
     def track(self, particle):
 
@@ -157,17 +172,3 @@ class __LimitFoilCls__(Element):
                 )[0]
             self.scatter(particle, idx = hitting_particles_idx)
 
-#----------- Front facing function to circumvent the ---------------------
-#------- restrictions of functions as default parameters -----------------
-def LimitFoil(**kwargs):
-    func_scatter = kwargs.pop('func_scatter', None)
-    foilclass_instance = __LimitFoilCls__(**kwargs)
-    if func_scatter:
-        if not type(func_scatter) == type(lambda: None):
-            raise ValueError("func_scatter must be function")
-        foilclass_instance.scatter = types.MethodType(  func_scatter, 
-                                                        foilclass_instance)
-    else:
-        foilclass_instance.scatter = types.MethodType(  default_scatter, 
-                                                        foilclass_instance)
-    return foilclass_instance
