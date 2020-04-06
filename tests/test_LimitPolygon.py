@@ -48,11 +48,12 @@ def test_scalar():
         p_scalar.y = (np.random.rand()-0.5) * 2.*8.5e-2
         p_scalar.state = 1
 
-        poly_aper.track(p_scalar)
+        ret = poly_aper.track(p_scalar)
         if p_scalar.state == 1:
             passed_particles_x_poly += [p_scalar.x]
             passed_particles_y_poly += [p_scalar.y]
         else:
+            assert ret == "Particle lost"
             lost_particles_x_poly += [p_scalar.x]
             lost_particles_y_poly += [p_scalar.y]
         # check against LimitRect
