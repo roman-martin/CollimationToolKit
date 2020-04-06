@@ -115,7 +115,10 @@ class LimitPolygon(Element):
                                      np.ones(num_intersects.shape, dtype=int),
                                      np.zeros(num_intersects.shape, dtype=int)
                                     )
-        if hasattr(particle.state, "__iter__"):
+        if not hasattr(particle.state, "__iter__"):
+            if particle.state != 1:
+                return "Particle lost"
+        else:
             particle.remove_lost_particles()
             if len(particle.state) == 0:
                 return "All particles lost"
