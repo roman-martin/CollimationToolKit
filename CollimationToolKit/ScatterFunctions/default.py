@@ -20,3 +20,5 @@ def test_strip_ions(self, particle, idx=[]):
         particle.qratio = (particle.Z-1) / particle.q0
     else:
         particle[idx].qratio = np.divide(particle.Z[idx]-1, particle.q0[idx])
+        tmp_qratio = particle.qratio    # this is needed to...
+        particle.qratio = tmp_qratio    # ... trigger the qratio setter

@@ -61,9 +61,10 @@ def GLOBAL(self, particle, idx=[]):
         particle.qratio = (particle.Z-new_charge_state) / particle.q0
         particle.add_to_energy( (E_out-p_energy)*p_A )
     else:
+        tmp_add_to_energy = np.zeros(len(particle.state))
         for ii in idx:      # this is SUPER inefficient but straight forward
             if hasattr(particle, "A"):
-                p_A = particle.A
+                p_A = particle.A[ii]
             else:
                 p_A = particle.mass0/nmass
             p_Z = particle.Z[ii]
@@ -79,9 +80,10 @@ def GLOBAL(self, particle, idx=[]):
             new_charge_state = np.random.choice(len(chargestate_probability),
                                                 p = chargestate_probability)
             particle.qratio[ii] = (p_Z-new_charge_state) / particle.q0
-            mask = np.zeros(len(particle.state))
-            mask[ii] = 1
-            particle.add_to_energy( (E_out-p_energy)*p_A*mask )
+            tmp_add_to_energy[ii] = (E_out-p_energy)*p_A
+        tmp_qratio = particle.qratio    # this is needed to...
+        particle.qratio = tmp_qratio    # ... trigger the qratio setter
+        particle.add_to_energy(tmp_add_to_energy)
                                                     
 
 def __run_GLOBAL__(target_A, target_Z, target_Dt, p_A, p_Z, p_Q, p_energy):

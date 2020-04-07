@@ -62,6 +62,7 @@ def test_foil_testfunction():
     stripperfoil_test.track(p_testscatter)
 
     assert p_testscatter.qratio == (p_testscatter.Z-1)/p_testscatter.q0
+    assert p_testscatter.chi == p_testscatter.qratio
 
 
 
@@ -95,6 +96,7 @@ def test_GLOBAL():
 
     assert p_GLOBAL.qratio <= (92-0)/28
     assert p_GLOBAL.qratio > (92-6)/28
+    assert p_GLOBAL.chi == p_GLOBAL.qratio
     assert p_GLOBAL.delta < -0.07
 
 
@@ -130,5 +132,5 @@ def test_GLOBAL_vec():
         else:
             assert p_vec.qratio[ii] == 1.0
             assert p_vec.delta[ii] == 0.0
-
+    assert compare_arrays(p_vec.chi, p_vec.qratio)
 
