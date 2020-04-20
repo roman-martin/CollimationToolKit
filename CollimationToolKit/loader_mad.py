@@ -1,9 +1,28 @@
+#   Copyright 2020 CERN
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 import os
 import csv
 import numpy as np
 from pysixtrack import elements as pysixtrack_elements
 from CollimationToolKit.elements import LimitPolygon
 
+# The following function is a modified version of iter_from_madx_sequence()
+# from pysixtrack.loader_mad.py. It was modified to load apertures provided
+# as files to MAD-X as LimitPolygon class elements in pysixtrack.
+# You may obtain the original source code at
+# https://github.com/SixTrack/pysixtrack
 def iter_from_madx_sequence_ctk(
     sequence,
     classes=pysixtrack_elements,
@@ -217,6 +236,7 @@ def iter_from_madx_sequence_ctk(
                 raise ValueError("Aperture type not recognized")
 
             yield eename + "_aperture", newaperture
+        # modifications to load LimitPolygon
         elif install_apertures & os.path.isfile(ee.apertype):
             with open(ee.apertype,'r') as aper_file:
                 aper_reader = csv.reader(aper_file, delimiter=' ',
@@ -228,6 +248,7 @@ def iter_from_madx_sequence_ctk(
                 aperture = aper_coords
             )
             yield eename + "_aperture", newaperture
+        # /modifications to load LimitPolygon
 
     if hasattr(seq, "length") and seq.length > old_pp:
         yield "drift_%d" % i_drift, myDrift(length=(seq.length - old_pp))
