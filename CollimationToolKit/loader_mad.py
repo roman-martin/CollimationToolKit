@@ -1,4 +1,5 @@
 import os
+import io
 import csv
 import numpy as np
 from pysixtrack import elements as pysixtrack_elements
@@ -214,12 +215,19 @@ def iter_from_madx_sequence_ctk(
                     b=ee.aperture[3],
                 )
             else:
+                print(eename, ee.aperture)
                 raise ValueError("Aperture type not recognized")
 
             yield eename + "_aperture", newaperture
         elif install_apertures & os.path.isfile(ee.apertype):
             with open(ee.apertype,'r') as aper_file:
-                aper_reader = csv.reader(aper_file, delimiter=' ',
+                input_file_str = ''
+                for line in aper_file:
+                    if line.strip(): # ignore empty lines
+                        input_file_str += line.replace('\t',' ')
+                        # csv delimiter must be ' '
+            with io.StringIO(input_file_str) as file_from_str:
+                aper_reader = csv.reader(file_from_str, delimiter=' ',
                                          skipinitialspace=True,
                                          quoting=csv.QUOTE_NONNUMERIC)
                 #reader -> list and non-numpy transposing

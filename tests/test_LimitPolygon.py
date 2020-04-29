@@ -140,20 +140,26 @@ def test_Polygon_mad_loader():
     tmpdir = './tmp/'
     if not os.path.isdir(tmpdir):
         os.mkdir(tmpdir)
-    with open(tmpdir + 'test_poly.aper','w') as aper_file:
+    with open(tmpdir + 'test_poly_space.aper','w') as aper_file:
         for row in aper_array:
             aper_file.write(str(row[0]) + '   ' + str(row[1]) + '\n')
+        aper_file.write(' \t ')
+    with open(tmpdir + 'test_poly_tab.aper','w') as aper_file:
+        for row in aper_array:
+            aper_file.write(str(row[0]) + '\t' + str(row[1]) + '\n')
     
     madx.input('''
-        TXQ: Collimator, l=0.0, apertype='{}test_poly.aper';
+        TXQ1: Collimator, l=0.0, apertype='{}test_poly_space.aper';
+        TXQ2: Collimator, l=0.0, apertype='{}test_poly_tab.aper';
         
         testseq: SEQUENCE, l=2.0;
-            TXQ, at = 1.0;
+            TXQ1, at = 1.0;
+            TXQ2, at = 1.0;
         ENDSEQUENCE;
         
         BEAM, Particle=proton, Energy=50000.0, EXN=2.2e-6, EYN=2.2e-6;
         USE, Sequence=testseq;
-    '''.format(tmpdir))
+    '''.format(tmpdir,tmpdir))
             
     seq = madx.sequence.testseq
     testline = pysixtrack.Line.from_madx_sequence(seq,install_apertures=True)
