@@ -24,7 +24,7 @@ To make use of the GLOBAL charge exchange code, you need to run on a Linux
 system. You need to download the Linux executable of GLOBAL from 
 https://web-docs.gsi.de/~weick/charge_states/ and make sure it is in your path
 ```
-export PATH="/path/to/global/executable/:$PATH"
+export PATH="/path/to/global/directory:$PATH"
 ```
 
 ## Running the tests
