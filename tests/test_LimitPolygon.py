@@ -4,7 +4,7 @@ import os
 import shutil
 import pysixtrack
 import CollimationToolKit as ctk
-from mpmath import mp
+
 
 
 
@@ -105,21 +105,23 @@ def test_vector():
 #----Test mpmath compatibility--------------------------
 #-------------------------------------------------------
 def test_mpmath_compatibility():
+    mp = pytest.importorskip("mpmath")
+    
     p_mp = pysixtrack.Particles()
-    mp.dps = 25
-    p_mp.x = mp.mpf(0.03) - mp.mpf(1e-27)
-    p_mp.y = mp.mpf(0.01)
+    mp.mp.dps = 25
+    p_mp.x = mp.mpf('3e-2') - mp.mpf('1e-27')
+    p_mp.y = mp.mpf('1e-2')
     p_mp.state = 1
-    polygon_mp = [[mp.mpf(-0.03),mp.mpf(0.03),mp.mpf(0.03),mp.mpf(-0.03)],
-                  [mp.mpf(0.04),mp.mpf(0.04),mp.mpf(-0.04),mp.mpf(-0.04)]]
+    polygon_mp = [[mp.mpf('-3e-2'),mp.mpf('3e-2'),mp.mpf('3e-2'),mp.mpf('-3e-2')],
+                  [mp.mpf('4e-2'),mp.mpf('4e-2'),mp.mpf('-4e-2'),mp.mpf('-4e-2')]]
     aper_elem_mp = ctk.elements.LimitPolygon(aperture = polygon_mp)
 
     aper_elem_mp.track(p_mp)
 
     assert p_mp.state == 1
 
-    p_mp.x = mp.mpf(0.03) + mp.mpf(1e-27)
-    p_mp.y = mp.mpf(0.01)
+    p_mp.x = mp.mpf('3e-2') + mp.mpf('1e-27')
+    p_mp.y = mp.mpf('1e-2')
     p_mp.state = 1
     aper_elem_mp.track(p_mp)
 
