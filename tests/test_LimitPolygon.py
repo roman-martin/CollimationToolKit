@@ -105,10 +105,11 @@ def test_vector():
 #----Test mpmath compatibility--------------------------
 #-------------------------------------------------------
 def test_mpmath_compatibility():
-    mp = pytest.importorskip("mpmath")
+    mpmath = pytest.importorskip("mpmath")
+    mp = mpmath.mp
     
     p_mp = pysixtrack.Particles()
-    mp.mp.dps = 25
+    mp.dps = 25
     p_mp.x = mp.mpf('3e-2') - mp.mpf('1e-27')
     p_mp.y = mp.mpf('1e-2')
     p_mp.state = 1
