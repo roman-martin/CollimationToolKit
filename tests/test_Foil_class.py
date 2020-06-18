@@ -9,12 +9,6 @@ import CollimationToolKit as ctk
 #--- basic foil class with default scatter function -------------------------
 #------------ should act like LimitRect -------------------------------------
 #-------------------------------------------------------------------------------
-def compare_arrays(a,b):
-    if a.shape == b.shape:
-        if (a == b).all():
-            return True
-    return False
-
 def test_foil_default():
     rect_aperture = pysixtrack.elements.LimitRect(
         min_x=-1e-2, max_x=2e-2, min_y=-0.5e-2, max_y=2.5e-2
@@ -32,11 +26,11 @@ def test_foil_default():
     p_rect = p_foil.copy()
 
     foil_aperture.track(p_foil)
-    assert not compare_arrays(p_foil.state, p_rect.state), "Particles not affected by tracking"
+    assert not np.array_equal(p_foil.state, p_rect.state), "Particles not affected by tracking"
 
     rect_aperture.track(p_rect)
     # LimitFoil with default scatter function should act like LimitRect
-    assert compare_arrays(p_foil.state, p_rect.state), "Particles after tracking are not identical"
+    assert np.array_equal(p_foil.state, p_rect.state), "Particles after tracking are not identical"
 
 
 #-------------------------------------------------------------------------------
@@ -132,5 +126,5 @@ def test_GLOBAL_vec():
         else:
             assert p_vec.qratio[ii] == 1.0
             assert p_vec.delta[ii] == 0.0
-    assert compare_arrays(p_vec.chi, p_vec.qratio)
+    assert np.array_equal(p_vec.chi, p_vec.qratio)
 

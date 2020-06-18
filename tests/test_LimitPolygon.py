@@ -77,12 +77,6 @@ def test_scalar():
 #-------------------------------------------------------
 #----Test vector----------------------------------------
 #-------------------------------------------------------
-def compare_arrays(a,b):
-    if a.shape == b.shape:
-        if (a == b).all():
-            return True
-    return False
-
 def test_vector():
     p_vec_poly = pysixtrack.Particles()
     p_vec_poly.x = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
@@ -96,9 +90,9 @@ def test_vector():
     rect_aper.track(p_vec_rect)
 
 
-    assert compare_arrays(p_vec_poly.state,p_vec_rect.state)
-    assert compare_arrays(p_vec_poly.x,p_vec_rect.x)
-    assert compare_arrays(p_vec_poly.y,p_vec_rect.y)
+    assert np.array_equal(p_vec_poly.state,p_vec_rect.state)
+    assert np.array_equal(p_vec_poly.x,p_vec_rect.x)
+    assert np.array_equal(p_vec_poly.y,p_vec_rect.y)
 
 
 #-------------------------------------------------------
@@ -180,9 +174,9 @@ def test_Polygon_mad_loader():
     rect_aper.track(p_rect)
 
 
-    assert compare_arrays(p_poly_mad.state,p_rect.state)
-    assert compare_arrays(p_poly_mad.x,p_rect.x)
-    assert compare_arrays(p_poly_mad.y,p_rect.y)
+    assert np.array_equal(p_poly_mad.state,p_rect.state)
+    assert np.array_equal(p_poly_mad.x,p_rect.x)
+    assert np.array_equal(p_poly_mad.y,p_rect.y)
     
     if os.path.isfile(tmpdir + 'test_poly.aper'):
         shutil.rmtree(tmpdir)
