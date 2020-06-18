@@ -26,13 +26,13 @@ class LimitPolygon(Element):
       
     @staticmethod
     def np_is_right_of(line_start, line_end, point):
-        # decides if point is left of line going through line_start and 
+        # decides if point is right of line going through line_start and 
         # line_end by checking the 3rd dimension direction of the cross 
         # product of the involved vectors
         def __crossproduct_z__(vector1, vector2):
             return np.multiply(vector1[0],vector2[1]) - np.multiply(vector1[1],vector2[0])
         
-        return __crossproduct_z__(line_end-line_start, point-line_start) < 0.0
+        return __crossproduct_z__(line_end-line_start, point-line_start) > 0.0
     
     @staticmethod
     def map_is_right_of(line_start, line_end, point):
@@ -61,7 +61,7 @@ class LimitPolygon(Element):
         vec_line = [list(map(sub,le,ls)) for le,ls in zip(line_end, line_start)]
         vec_line_to_point = [list(map(sub,pt,ls)) for pt,ls in zip(point, line_start)]
         z_coord = __crossproduct_z__(vec_line, vec_line_to_point)
-        return [z < 0.0 for z in z_coord]
+        return [z > 0.0 for z in z_coord]
 
 
 
