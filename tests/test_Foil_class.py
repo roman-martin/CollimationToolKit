@@ -82,6 +82,7 @@ def test_GLOBAL():
                                     p0c = np.sqrt(Ekin**2 + 2*Ekin*uranium_mass))
     p_GLOBAL.state = 1
     p_GLOBAL.Z = 92
+    p_GLOBAL.A = 238
 
     assert p_GLOBAL.qratio == 1.0
     assert p_GLOBAL.delta == 0.0
@@ -104,7 +105,7 @@ def test_GLOBAL_vec():
         
     N_part = 200
     p_vec = pysixtrack.Particles(q0=28, mass0 = uranium_mass,
-                                    p0c = np.sqrt(Ekin**2 + 2*Ekin*uranium_mass))
+                                 p0c = np.sqrt(Ekin**2 + 2*Ekin*uranium_mass))
                                     
     p_vec.x = np.random.uniform(low=-3e-1, high=3e-1, size=N_part)
     p_vec.y = np.random.uniform(low=-3e-1, high=3e-1, size=N_part)
@@ -112,11 +113,9 @@ def test_GLOBAL_vec():
     p_vec.qratio = np.ones_like(p_vec.x, dtype=np.float)
     p_vec.delta = np.zeros_like(p_vec.x, dtype=np.float)
     p_vec.Z = np.ones_like(p_vec.x, dtype=np.int) * 92
-
-
+    p_vec.A = np.ones_like(p_vec.x, dtype=np.int) * 238
 
     stripperfoil_GLOBAL.track(p_vec)
-
 
     for ii in range(len(p_vec.x)):
         if p_vec.x[ii] <= foil_min_x:

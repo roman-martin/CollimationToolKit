@@ -46,7 +46,7 @@ def GLOBAL(self, particle, idx=[]):
         if hasattr(particle, "A"):
                 p_A = particle.A
         else:
-            p_A = particle.mass0/nmass  # I don't like this way of retrieving A ... NOT. AT. ALL.
+            raise AttributeError("Atomic mass (particle.A) not defined.")
         p_Z = particle.Z
         p_Q = particle.q0 * particle.qratio
         p_energy = (particle.energy - particle.mass0) / p_A
@@ -66,7 +66,7 @@ def GLOBAL(self, particle, idx=[]):
             if hasattr(particle, "A"):
                 p_A = particle.A[ii]
             else:
-                p_A = particle.mass0/nmass
+                raise AttributeError("Atomic mass (particle.A) not defined.")
             p_Z = particle.Z[ii]
             if not p_Z:
                 continue    # in case we ever track mixed particle sets including non-ions
