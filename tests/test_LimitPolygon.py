@@ -95,6 +95,90 @@ def test_vector():
     assert np.array_equal(p_vec_poly.y,p_vec_rect.y)
 
 
+
+def test_concave_poly():
+    # We create and "H" shaped polygon and rotate it.
+    # this way, we can cross check with 3 LimitRects and rotations
+    p_vec_poly = pysixtrack.Particles()
+    p_vec_poly.x = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
+    p_vec_poly.y = np.random.uniform(low=-8.5e-2, high=8.5e-2, size=N_part)
+    p_vec_poly.state = np.ones_like(p_vec_poly.x, dtype=np.int)
+    p_vec_rect_left = p_vec_poly.copy()
+
+
+    H_array = np.array([[2e-2, 1e-2],
+                        [2e-2, 5e-2],
+                        [3e-2, 5e-2],
+                        [3e-2, -5e-2],
+                        [2e-2, -5e-2],
+                        [2e-2, -1e-2],
+                        [-2e-2, -1e-2],
+                        [-2e-2, -5e-2],
+                        [-3e-2, -5e-2],
+                        [-3e-2, 5e-2],
+                        [-2e-2, 5e-2],
+                        [-2e-2, 1e-2]]
+                      ).transpose()
+    rot_angle = 20.* np.pi/180.
+    rot_matrix = [[np.cos(rot_angle), -1*np.sin(rot_angle)],
+                  [np.sin(rot_angle),np.cos(rot_angle)]
+                 ]
+    H_aper_array = np.matmul(rot_matrix, H_array)
+    poly_convex_aper = ctk.elements.LimitPolygon(aperture = H_aper_array)
+
+    rect_aper_left = pysixtrack.elements.LimitRect(
+                            min_x=-3e-2,
+                            max_x=-2e-2,
+                            min_y=-5e-2,
+                            max_y= 5e-2
+                        )
+    rect_aper_mid = pysixtrack.elements.LimitRect(
+                            min_x=-3e-2,
+                            max_x= 3e-2,
+                            min_y=-1e-2,
+                            max_y= 1e-2
+                        )
+    rect_aper_right = pysixtrack.elements.LimitRect(
+                            min_x= 2e-2,
+                            max_x= 3e-2,
+                            min_y=-5e-2,
+                            max_y= 5e-2
+                        )
+    rot_elem = pysixtrack.elements.SRotation(angle=rot_angle*180./np.pi)
+    backrot_elem = pysixtrack.elements.SRotation(angle=-1*rot_angle*180./np.pi)
+
+
+    rot_elem.track(p_vec_rect_left)
+    p_vec_rect_mid = p_vec_rect_left.copy()
+    p_vec_rect_right = p_vec_rect_left.copy()
+
+    poly_convex_aper.track(p_vec_poly)
+    rect_aper_left.track(p_vec_rect_left)
+    backrot_elem.track(p_vec_rect_left)
+    rect_aper_mid.track(p_vec_rect_mid)
+    backrot_elem.track(p_vec_rect_mid)
+    rect_aper_right.track(p_vec_rect_right)
+    backrot_elem.track(p_vec_rect_right)
+
+    # check if the surviving particles coincide
+    poly_state_checked = np.zeros_like(p_vec_poly.state, dtype=bool)
+    for p_vec in [p_vec_rect_left, p_vec_rect_mid, p_vec_rect_right]:
+        for x,y in zip(p_vec.x, p_vec.y):
+            x_index, = np.where(abs(p_vec_poly.x-x) < 1e-15)
+            y_index, = np.where(abs(p_vec_poly.y-y) < 1e-15)
+            assert len(x_index) >= 1
+            assert len(y_index) >= 1
+            if len(x_index) == 1 and len(y_index) == 1:
+                assert x_index[0] == y_index[0]
+            else:
+                # Not yet implemented
+                assert False, 'The chance of this happening is tiny, try to repeat test'
+            poly_state_checked[x_index] = True
+
+    assert np.all(poly_state_checked)
+
+
+
 #-------------------------------------------------------
 #----Test mpmath compatibility--------------------------
 #-------------------------------------------------------
