@@ -54,8 +54,8 @@ def iter_from_madx_sequence_ctk(
         eename = ee.name
         mad_etype = ee.base_type.name
 
-        if ee.length > 0:
-            raise ValueError(f"Sequence {seq} contains {eename} with length>0")
+        # if ee.length > 0:
+        #    raise ValueError(f"Sequence {seq} contains {eename} with length>0")
 
         if mad_etype in [
             "marker",
@@ -70,6 +70,7 @@ def iter_from_madx_sequence_ctk(
             "drift",
         ]:
             newele = myDrift(length=ee.l)
+            old_pp+=ee.l
 
         elif mad_etype in ignored_madtypes:
             pass
@@ -198,12 +199,17 @@ def iter_from_madx_sequence_ctk(
                 )
             else:
                 newele = myDrift(length=ee.l)
+                old_pp+=ee.l
         else:
             raise ValueError(f'MAD element "{mad_etype}" not recognized')
 
         yield eename, newele
 
-        if install_apertures & (min(ee.aperture) > 0):
+        if (
+            install_apertures
+            and hasattr(ee, "aperture")
+            and (min(ee.aperture) > 0)
+        ):
             if ee.apertype == "rectangle":
                 newaperture = pysixtrack_elements.LimitRect(
                     min_x=-ee.aperture[0],
@@ -226,20 +232,17 @@ def iter_from_madx_sequence_ctk(
                     a=ee.aperture[2],
                     b=ee.aperture[3],
                 )
-            elif ee.apertype == "rectellipse":
-                newaperture = pysixtrack_elements.LimitRectEllipse(
-                    max_x=ee.aperture[0],
-                    max_y=ee.aperture[1],
-                    a=ee.aperture[2],
-                    b=ee.aperture[3],
-                )
+
             else:
-                print(eename, ee.aperture)
-                raise ValueError("Aperture type not recognized")
+                # modifications to load LimitPolygon
+                if not os.path.isfile(ee.apertype):
+                    raise ValueError("Aperture type not recognized")
 
             yield eename + "_aperture", newaperture
         # modifications to load LimitPolygon
         elif install_apertures & os.path.isfile(ee.apertype):
+            # this was put here because the other aperture 
+            # installation checks for aperture > 0
             with open(ee.apertype,'r') as aper_file:
                 input_file_str = ''
                 for line in aper_file:
@@ -261,3 +264,125 @@ def iter_from_madx_sequence_ctk(
     if hasattr(seq, "length") and seq.length > old_pp:
         yield "drift_%d" % i_drift, myDrift(length=(seq.length - old_pp))
 
+
+class MadPoint(object):
+    @classmethod
+    def from_survey(cls, name, mad):
+        return cls(name, mad, use_twiss=False, use_survey=True)
+
+    @classmethod
+    def from_twiss(cls, name, mad):
+        return cls(name, mad, use_twiss=True, use_survey=False)
+
+    def __init__(self, name, mad, use_twiss=True, use_survey=True):
+
+        self.use_twiss = use_twiss
+        self.use_survey = use_survey
+
+        if not (use_survey) and not (use_twiss):
+            raise ValueError(
+                "use_survey and use_twiss cannot be False at the same time"
+            )
+
+        self.name = name
+        if use_twiss:
+            twiss = mad.table.twiss
+            names = twiss.name
+        if use_survey:
+            survey = mad.table.survey
+            names = survey.name
+
+        idx = np.where(names == name)[0][0]
+
+        if use_twiss:
+            self.tx = twiss.x[idx]
+            self.ty = twiss.y[idx]
+            self.tpx = twiss.px[idx]
+            self.tpy = twiss.py[idx]
+        else:
+            self.tx = None
+            self.ty = None
+            self.tpx = None
+            self.tpy = None
+
+        if use_survey:
+            self.sx = survey.x[idx]
+            self.sy = survey.y[idx]
+            self.sz = survey.z[idx]
+            self.sp = np.array([self.sx, self.sy, self.sz])
+            theta = survey.theta[idx]
+            phi = survey.phi[idx]
+            psi = survey.psi[idx]
+        else:
+            self.sx = None
+            self.sy = None
+            self.sz = None
+            self.sp = None
+            theta = 0.0
+            phi = 0.0
+            psi = 0.0
+
+        thetam = np.array(
+            [
+                [np.cos(theta), 0, np.sin(theta)],
+                [0, 1, 0],
+                [-np.sin(theta), 0, np.cos(theta)],
+            ]
+        )
+        phim = np.array(
+            [
+                [1, 0, 0],
+                [0, np.cos(phi), np.sin(phi)],
+                [0, -np.sin(phi), np.cos(phi)],
+            ]
+        )
+        psim = np.array(
+            [
+                [np.cos(psi), -np.sin(psi), 0],
+                [np.sin(psi), np.cos(psi), 0],
+                [0, 0, 1],
+            ]
+        )
+        wm = np.dot(thetam, np.dot(phim, psim))
+        self.ex = np.dot(wm, np.array([1, 0, 0]))
+        self.ey = np.dot(wm, np.array([0, 1, 0]))
+        self.ez = np.dot(wm, np.array([0, 0, 1]))
+
+        self.p = np.array([0.0, 0.0, 0.0])
+
+        if use_twiss:
+            self.p += self.ex * self.tx + self.ey * self.ty
+
+        if use_survey:
+            self.p += self.sp
+
+    def dist(self, other):
+        return np.sqrt(np.sum((self.p - other.p) ** 2))
+
+    def distxy(self, other):
+        dd = self.p - other.p
+        return np.dot(dd, self.ex), np.dot(dd, self.ey)
+
+
+def mad_benchmark(mtype, attrs, pc=0.2, x=0, px=0, y=0, py=0, t=0, pt=0):
+    import pysixtrack
+    from cpymad.madx import Madx
+
+    mad = Madx(stdout=False)
+    madtype = mad.command[mtype]
+    mad.beam(particle="proton", pc=pc)
+    madtype.clone("mm", **attrs)
+    mad.input("bench: line=(mm)")
+    mad.use(sequence="bench")
+    mad.track(onepass=True, dump=False)
+    mad.start(x=x, px=px, y=y, py=py, t=t, pt=pt)
+    mad.run()
+    mad.endtrack()
+    p_mad = pysixtrack.Particles.from_madx_track(mad)
+    p_six = p_mad.copy(0)
+    line = pysixtrack.Line.from_madx_sequence(
+        mad.sequence.bench, exact_drift=True
+    )
+    line.track(p_six)
+    p_mad.copy(-1).compare(p_six, rel_tol=0)
+    return mad, line, p_mad, p_six
